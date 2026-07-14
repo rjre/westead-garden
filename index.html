@@ -664,8 +664,13 @@ function collectGroups(month){
 function jobRow(it,{checkable=false,rest=false,weather=false}={}){
   const row = document.createElement("div");
   row.className = "job"+(rest?" rest":"")+(weather?" weather-job":"");
-  const chips = it.plants.map(pl=>
-    `<button class="chip" data-target="${pl.id}">${pl.n}</button>`).join("");
+  const seen = new Map();   /* common name -> first matching card */
+  it.plants.forEach(pl=>{
+    const label = pl.c.replace(/\s*\(.*\)$/,"").replace(/\s*·.*$/,"");
+    if(!seen.has(label)) seen.set(label, pl.id);
+  });
+  const chips = [...seen.entries()].map(([label,id])=>
+    `<button class="chip" data-target="${id}">${label}</button>`).join("");
   const help = VERB_HELP[it.verb] ? ` title="${VERB_HELP[it.verb].replace(/"/g,'&quot;')}"` : "";
   const key = WEEK_KEY + hash(it.verb+it.text);
   const done = checkable && readStore(key)==="1";
