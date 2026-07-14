@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Westead — Garden Almanac</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Karla:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDEFE3;
+    --card:#FBFBF3;
+    --ink:#242C22;
+    --muted:#5D6757;
+    --faint:#8A9282;
+    --line:#D6DAC5;
+    --acc:#C08A3E;      /* set per month by JS */
+    --acc-ink:#FFFFFF;
+    --acc-soft:rgba(192,138,62,.14);
+    --band-on:#39472F;
+    --warn:#8A6D1F;
+    --warn-bg:#F6EAC8;
+    --warn-line:#DFC078;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{animation:none!important;transition:none!important}
+  }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Karla',system-ui,sans-serif;
+    font-size:16px;line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+
+  /* ---------- header ---------- */
+  header{padding:44px 0 10px}
+  .eyebrow{
+    font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--acc);font-weight:700;transition:color .5s;
+  }
+  h1{
+    font-family:'Fraunces',Georgia,serif;
+    font-weight:400;font-size:clamp(40px,6vw,64px);
+    line-height:1.02;letter-spacing:-.01em;margin-top:6px;
+  }
+  h1 em{font-style:italic;font-weight:340;color:var(--muted)}
+  .intro{max-width:58ch;color:var(--muted);margin-top:12px}
+
+  /* ---------- month spine ---------- */
+  .spine{
+    position:sticky;top:0;z-index:40;
+    background:linear-gradient(var(--paper) 82%,rgba(237,239,227,0));
+    padding:18px 0 14px;
+  }
+  .months{
+    display:grid;grid-template-columns:repeat(12,1fr);gap:5px;
+    border:1px solid var(--line);border-radius:999px;
+    background:var(--card);padding:5px;
+  }
+  .mbtn{
+    position:relative;appearance:none;border:0;background:transparent;
+    font-family:'Karla',sans-serif;font-weight:600;font-size:13px;
+    color:var(--muted);padding:9px 0;border-radius:999px;cursor:pointer;
+    transition:background .25s,color .25s;
+  }
+  .mbtn:hover{background:var(--acc-soft);color:var(--ink)}
+  .mbtn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+  .mbtn[aria-pressed="true"]{background:var(--acc);color:var(--acc-ink)}
+  .mbtn .now-dot{
+    position:absolute;left:50%;transform:translateX(-50%);bottom:2px;
+    width:4px;height:4px;border-radius:50%;background:var(--acc);
+  }
+  .mbtn[aria-pressed="true"] .now-dot{background:var(--acc-ink)}
+  .spine-note{
+    text-align:center;font-size:12px;color:var(--faint);margin-top:7px;
+  }
+
+  /* ---------- jobs panel ---------- */
+  .jobs{
+    margin-top:14px;background:var(--card);
+    border:1px solid var(--line);border-radius:18px;
+    padding:26px 28px 24px;
+    border-top:4px solid var(--acc);
+    transition:border-color .5s;
+  }
+  .jobs h2{
+    font-family:'Fraunces',Georgia,serif;font-weight:420;
+    font-size:clamp(24px,3.4vw,34px);line-height:1.1;
+  }
+  .jobs h2 .season-word{font-style:italic;color:var(--acc);transition:color .5s}
+  .almanac-line{margin-top:6px;color:var(--muted);font-size:15px}
+  .almanac-line::before{content:"❧ ";color:var(--acc)}
+  .job-count{font-size:13px;color:var(--faint);margin-top:2px}
+
+  /* weather strip */
+  .weather{
+    margin-top:18px;border:1px solid var(--line);border-radius:14px;
+    background:var(--paper);padding:14px 16px 12px;
+  }
+  .weather-head{
+    display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;
+    font-size:13px;color:var(--muted);
+  }
+  .weather-head b{font-size:14px;color:var(--ink)}
+  .forecast{
+    display:flex;gap:6px;margin-top:10px;overflow-x:auto;
+    padding-bottom:4px;scrollbar-width:thin;
+  }
+  .fday{
+    flex:1;min-width:66px;text-align:center;background:var(--card);
+    border:1px solid var(--line);border-radius:10px;padding:8px 4px;
+  }
+  .fday.today{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+  .fday .d{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+  .fday .e{font-size:19px;line-height:1.3}
+  .fday .t{font-size:12.5px;font-weight:600}
+  .fday .t small{color:var(--faint);font-weight:400}
+  .fday .r{font-size:10.5px;color:#5E7D8C;min-height:14px}
+  .weather-off{font-size:13px;color:var(--faint);font-style:italic;margin-top:14px}
+
+  /* week groups */
+  .week-title{
+    display:flex;align-items:baseline;gap:10px;
+    margin:22px 0 4px;padding-bottom:6px;border-bottom:2px solid var(--acc);
+  }
+  .week-title h3{
+    font-family:'Fraunces',Georgia,serif;font-style:italic;font-weight:480;
+    font-size:20px;
+  }
+  .week-title .sub{font-size:12.5px;color:var(--faint)}
+  .week-title .progress{margin-left:auto;font-size:12.5px;color:var(--acc);font-weight:700}
+  .rest-title{
+    margin:24px 0 2px;font-size:12px;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--faint);
+  }
+  .job-list{display:grid;gap:0}
+  .job{
+    display:grid;grid-template-columns:26px 118px 1fr;gap:12px;
+    padding:12px 2px;border-top:1px dashed var(--line);align-items:start;
+  }
+  .job:first-child{border-top:0}
+  .job.rest{opacity:.72}
+  .job.rest .job-check{visibility:hidden}
+  .job-check{padding-top:2px}
+  .job-check input{
+    width:17px;height:17px;accent-color:var(--acc);cursor:pointer;
+  }
+  .job.done .job-text{text-decoration:line-through;color:var(--faint)}
+  .job-verb{
+    font-size:11.5px;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--acc);padding-top:3px;transition:color .5s;
+    border-bottom:1px dotted var(--line);align-self:start;justify-self:start;
+    cursor:help;
+  }
+  .job.weather-job{
+    background:var(--warn-bg);border:1px solid var(--warn-line);border-radius:10px;
+    padding:12px;margin:4px 0;border-top:1px solid var(--warn-line);
+  }
+  .job.weather-job .job-verb{color:var(--warn);border-bottom:0;cursor:default}
+  .job-text{font-size:15.5px}
+  .job-plants{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}
+  .chip{
+    appearance:none;border:1px solid var(--line);background:var(--paper);
+    border-radius:999px;font-family:'Karla',sans-serif;font-size:12.5px;
+    color:var(--muted);padding:3px 11px;cursor:pointer;
+    transition:border-color .2s,color .2s,background .2s;
+  }
+  .chip:hover{border-color:var(--acc);color:var(--ink);background:var(--acc-soft)}
+  .chip:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+  .no-jobs{color:var(--muted);font-style:italic;padding:14px 0 4px}
+  .glossary-hint{margin-top:14px;font-size:12px;color:var(--faint)}
+
+  /* ---------- directory ---------- */
+  .dir-head{
+    display:flex;flex-wrap:wrap;align-items:baseline;gap:14px;
+    margin:52px 0 6px;
+  }
+  .dir-head h2{font-family:'Fraunces',Georgia,serif;font-weight:420;font-size:30px}
+  .dir-head .count{color:var(--faint);font-size:14px}
+  .photo-warn{
+    display:none;margin:12px 0 0;padding:10px 16px;border:1px solid var(--warn-line);
+    background:var(--warn-bg);border-radius:10px;font-size:13.5px;color:var(--warn);
+  }
+  .photo-warn.show{display:block}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0 8px}
+  .search{
+    flex:1;min-width:220px;max-width:340px;
+    border:1px solid var(--line);border-radius:999px;background:var(--card);
+    font-family:'Karla',sans-serif;font-size:14px;color:var(--ink);
+    padding:9px 16px;
+  }
+  .search:focus{outline:2px solid var(--acc);outline-offset:1px}
+  .catchip{
+    appearance:none;border:1px solid var(--line);background:var(--card);
+    border-radius:999px;font-family:'Karla',sans-serif;font-size:13px;font-weight:600;
+    color:var(--muted);padding:7px 14px;cursor:pointer;transition:all .2s;
+  }
+  .catchip:hover{border-color:var(--acc);color:var(--ink)}
+  .catchip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--card)}
+  .catchip:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+
+  .section{margin-top:34px}
+  .section-title{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+  .section-title h3{
+    font-family:'Fraunces',Georgia,serif;font-weight:480;font-size:21px;font-style:italic;
+  }
+  .section-title .rule{flex:1;height:1px;background:var(--line)}
+  .section-title .n{font-size:12px;color:var(--faint)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:16px}
+  .plant{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    overflow:hidden;display:flex;flex-direction:column;
+    transition:box-shadow .25s,transform .25s;
+  }
+  .plant:hover{box-shadow:0 6px 22px rgba(36,44,34,.09);transform:translateY(-2px)}
+  .plant.flash{outline:3px solid var(--acc);outline-offset:2px}
+  .ph{aspect-ratio:4/3;background:#E3E6D6;position:relative;overflow:hidden}
+  .ph img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s}
+  .ph img.ready{opacity:1}
+  .ph .fallback{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:6px;color:var(--faint);
+  }
+  .ph .fallback svg{width:44px;height:44px;opacity:.6}
+  .ph .fallback span{font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+  .pbody{padding:15px 16px 16px;display:flex;flex-direction:column;flex:1;gap:8px}
+  .pname{font-weight:700;font-size:16.5px;line-height:1.2}
+  .platin{
+    font-family:'Fraunces',Georgia,serif;font-style:italic;font-weight:400;
+    font-size:14.5px;color:var(--muted);margin-top:1px;
+  }
+  .ptips{font-size:13.8px;color:var(--muted);line-height:1.5}
+  .pnow{margin-top:auto;padding-top:10px;border-top:1px dashed var(--line);font-size:13.5px}
+  .pnow b{color:var(--acc);font-weight:700;transition:color .5s}
+  .pnow.quiet{color:var(--faint);font-style:italic}
+  .band{display:flex;gap:3px;margin-top:9px}
+  .cell{
+    flex:1;height:9px;border-radius:3px;background:var(--paper);
+    border:1px solid var(--line);position:relative;
+  }
+  .cell.on{background:var(--band-on);border-color:var(--band-on)}
+  .cell.sel{box-shadow:0 0 0 2px var(--acc)}
+  .band-labels{display:flex;gap:3px;margin-top:3px}
+  .band-labels span{flex:1;text-align:center;font-size:8.5px;color:var(--faint);letter-spacing:.02em}
+
+  footer{
+    margin:70px 0 40px;padding-top:18px;border-top:1px solid var(--line);
+    color:var(--faint);font-size:13px;display:flex;flex-wrap:wrap;gap:10px;
+    justify-content:space-between;
+  }
+  @media (max-width:640px){
+    .months{grid-template-columns:repeat(6,1fr)}
+    .job{grid-template-columns:26px 1fr;gap:6px}
+    .job .job-verb{grid-column:2}
+    .job .job-body{grid-column:2}
+    .jobs{padding:20px 18px}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow">Garden Almanac</div>
+    <h1>Westead <em>— the year in the garden</em></h1>
+    <p class="intro">Open this once a week. It knows the date, checks the weather,
+    and tells you what the garden needs — tick jobs off as you go. Pick another
+    month to see what's coming.</p>
+  </header>
+
+  <div class="spine">
+    <div class="months" role="tablist" aria-label="Choose a month" id="months"></div>
+    <div class="spine-note" id="spineNote"></div>
+  </div>
+
+  <section class="jobs" aria-live="polite">
+    <h2>Jobs for <span class="season-word" id="monthName"></span></h2>
+    <p class="almanac-line" id="almanacLine"></p>
+    <p class="job-count" id="jobCount"></p>
+    <div id="weatherBox"></div>
+    <div id="jobArea"></div>
+    <p class="glossary-hint">New to the jargon? Hover (or long-press) any job label —
+    coppice, Chelsea chop and the rest are explained.</p>
+  </section>
+
+  <div class="dir-head">
+    <h2>The plant list</h2>
+    <span class="count" id="plantCount"></span>
+  </div>
+  <div class="photo-warn" id="photoWarn">
+    Photos couldn't be fetched — this network or browser is blocking wikipedia.org.
+    Everything else works; try opening the page on another network to see the pictures.
+  </div>
+  <div class="controls">
+    <input class="search" id="search" type="search" placeholder="Find a plant… (e.g. hosta, salvia, fern)" aria-label="Filter plants">
+    <button class="catchip" data-cat="all" aria-pressed="true">All</button>
+    <button class="catchip" data-cat="Trees" aria-pressed="false">Trees</button>
+    <button class="catchip" data-cat="Shrubs" aria-pressed="false">Shrubs</button>
+    <button class="catchip" data-cat="Grasses" aria-pressed="false">Grasses</button>
+    <button class="catchip" data-cat="Perennials" aria-pressed="false">Perennials</button>
+    <button class="catchip" data-cat="Bulbs" aria-pressed="false">Bulbs</button>
+    <button class="catchip" data-cat="Front Garden" aria-pressed="false">Front Garden</button>
+  </div>
+
+  <div id="directory"></div>
+
+  <footer>
+    <span>Westead Garden Almanac · timings tuned for south-east England</span>
+    <span>Photos from Wikipedia · forecast by Open-Meteo · loaded live when online</span>
+  </footer>
+</div>
+
+<script>
+/* ================= data ================= */
+
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MABBR  = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+const DAYS   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+/* one accent per month — frost blues through spring greens to autumn coppers */
+const ACCENTS = ["#5F7D8C","#6E8A5E","#4E8A57","#4C9464","#7B5EA7","#B0578D","#C08A3E","#B96F3B","#A65D3F","#B14D2E","#7D5A44","#A93F32"];
+
+const ALMANAC = [
+  "Order seeds, sharpen and oil tools, and keep off frozen grass.",
+  "Last call for bare-root planting; wash pots and trays ready for spring.",
+  "Mulch everything you can — one barrow-load now saves ten waterings in July.",
+  "Weed little and often; late frosts can still bite tender new growth.",
+  "Water new plantings, not the whole border; watch for late frosts early in the month.",
+  "Water pots in the evening and keep on top of deadheading.",
+  "Deep, occasional soaks beat a daily sprinkle; keep bird baths topped up.",
+  "Trim hedges once fledglings have flown; collect seed on dry mornings.",
+  "Bulb-planting season opens — alliums, crocus and narcissi first.",
+  "Rake leaves into bin bags for leaf mould; divide tired perennial clumps.",
+  "Plant tulips now; leave seedheads standing for the birds and the frost.",
+  "Prune deciduous trees while dormant; the garden earns its keep in stems and bark."
+];
+
+/* jargon glossary — shown on hover of any job label */
+const VERB_HELP = {
+  "Coppice":"Cutting every stem down to near ground level so fresh ones regrow. Feels brutal; is kind.",
+  "Prune":"Cutting away selected stems or branches to shape the plant or keep it healthy.",
+  "Cut back":"Removing old top growth, usually down to just above the ground or to fresh new shoots.",
+  "Chelsea chop":"Cutting late-flowering perennials back by half in late May (Chelsea Flower Show week) — they regrow sturdier and flower a little later, without flopping.",
+  "Trim":"A light all-over haircut with shears or secateurs — shaping, not surgery.",
+  "Deadhead":"Snipping off spent flowers so the plant puts energy into more flowers, not seed.",
+  "Tidy":"Removing dead, scruffy or collapsed growth by hand or with secateurs.",
+  "Clean":"Exactly what it sounds like — here, washing the birch's white bark for winter.",
+  "Thin":"Removing some seedlings or stems so the rest have room to develop.",
+  "Divide":"Digging up a clump, splitting it into pieces and replanting them. Free plants, renewed vigour.",
+  "Feed":"Applying fertiliser — a balanced granular feed unless the job says otherwise.",
+  "Mulch":"Spreading a 5cm blanket of compost, bark or leaf mould over the soil. Feeds it, holds moisture, smothers weeds.",
+  "Water":"A deep occasional soak at the roots beats a daily sprinkle. Evenings are best in summer.",
+  "Plant":"Bulbs go in pointy-end up, at roughly three times their own depth unless told otherwise.",
+  "Propagate":"Taking cuttings: 8cm non-flowering shoot tips, lower leaves off, into gritty compost on a bright windowsill.",
+  "Protect":"Guarding against frost, slugs or winter wet — fleece, mulch or defences as the job says.",
+  "Harvest":"Picking for the kitchen. Take a little, often; the plant won't mind.",
+  "Inspect":"A close look for pests or problems — five minutes now saves a season later.",
+  "Leave":"Deliberately doing nothing. Old stems and seedheads feed birds and protect crowns.",
+  "Enjoy":"Also doing nothing — just don't miss it.",
+  "Weather":"Advice generated from this week's actual forecast for the garden."
+};
+
+/* care profiles: tips + calendar of [month, verb, task, phase]
+   phase: "E" early month (weeks 1–2) · "L" late month (weeks 3–4) · "A" any time */
+const PROFILES = {
+  acerG:{tips:"Slow-growing and best left alone. Peeling cinnamon bark is the winter show. Never prune in late winter or spring — maples bleed sap.",
+    cal:[[3,"Mulch","Mulch around the base with bark or leaf mould, kept clear of the trunk.","A"],
+         [7,"Water","Water deeply in dry spells, especially trees planted within the last 2–3 years.","A"],
+         [11,"Prune","Prune only if needed while fully dormant — remove dead or crossing branches.","A"],
+         [12,"Enjoy","Peeling cinnamon bark at its best against low winter light.","A"]]},
+  acerS:{tips:"Coral-red young stems glow all winter; fresh growth colours best. Shelter from cold winds and hot afternoon sun; keep the roots cool and moist.",
+    cal:[[3,"Mulch","Mulch to keep the root run cool and moist through summer.","A"],
+         [7,"Water","Water in dry spells — leaf scorch on Japanese maples is nearly always drought or wind.","A"],
+         [11,"Prune","Tidy dead or crossing shoots while dormant; young stems carry the winter colour, so cut sparingly.","A"],
+         [12,"Enjoy","Coral-bark stems at their brightest.","A"]]},
+  birch:{tips:"Grown for the chalk-white stems. Prune only between late summer and Christmas — cut in late winter and it bleeds heavily.",
+    cal:[[3,"Mulch","Mulch the root zone; birches are shallow-rooted and resent drought.","A"],
+         [7,"Water","Water young trees generously in dry weather.","A"],
+         [8,"Prune","If any pruning is needed, do it between now and Christmas — never in late winter.","A"],
+         [12,"Clean","Wash the white stems with warm water and a soft brush for the winter display.","A"]]},
+  parrotia:{tips:"Persian ironwood — one of the finest small trees for autumn colour, with witch-hazel flowers on bare wood in late winter. Needs almost nothing.",
+    cal:[[2,"Prune","Remove crossing or damaged branches while dormant; otherwise leave well alone.","A"],
+         [3,"Mulch","Mulch the root zone with leaf mould.","A"],
+         [10,"Enjoy","Peak autumn colour — crimson, amber and gold on one tree.","A"]]},
+  cornus:{tips:"Grown for winter stem colour, which is brightest on young wood — so cut hard every spring and let it regrow.",
+    cal:[[1,"Enjoy","Winter stems at their peak — the reason it earns its place.","A"],
+         [3,"Coppice","Coppice hard in late March — every stem down to 5–8cm before the leaves open.","L"],
+         [4,"Feed","Feed with a balanced fertiliser and mulch after coppicing to fuel the regrowth.","E"],
+         [7,"Water","Water in dry spells while the new stems are building.","A"]]},
+  calam:{tips:"Bolt-upright feather reed grass; flowers early for a grass and stands rigidly through winter. Happy on heavier soil.",
+    cal:[[2,"Cut back","Cut the whole clump to 15cm before new growth starts.","A"],
+         [6,"Enjoy","Feathery flowerheads open — they hold their shape into next year.","A"],
+         [12,"Leave","Leave the bleached stems standing; they carry frost beautifully.","A"]]},
+  carex:{tips:"Evergreen Japanese sedge for shade or sun. Never cut to the ground — it will not forgive you.",
+    cal:[[4,"Tidy","Comb out dead leaves by hand and snip scruffy tips — never shear the whole clump.","A"],
+         [5,"Divide","Lift and divide congested clumps if needed, once growth is under way.","A"]]},
+  desch:{tips:"Tufted hair grass — a cloud of tiny flowers from early summer. Self-seeds where it is happy.",
+    cal:[[2,"Cut back","Cut deciduous clumps down before the new growth shows.","A"],
+         [7,"Deadhead","Remove seedheads now if you want to limit self-seeding — otherwise leave them.","A"]]},
+  hakone:{tips:"Japanese forest grass — a slow, arching mound, superb in shade or pots. Sulks in dry soil.",
+    cal:[[3,"Cut back","Cut last year's foliage to the ground before new shoots emerge.","E"],
+         [4,"Mulch","Mulch to hold moisture through summer.","A"],
+         [6,"Water","Keep it moist — hakonechloa browns quickly in drought.","A"]]},
+  penn:{tips:"Fountain grass with bottlebrush heads from late summer. Borderline hardy — winter foliage protects the crown, so cut back late.",
+    cal:[[4,"Cut back","Cut the old foliage back now — later than other grasses, as it shields the crown over winter.","A"],
+         [9,"Enjoy","Bottlebrush seedheads at their peak.","A"],
+         [11,"Protect","Mulch over the crown before hard frosts arrive.","E"]]},
+  stipa:{tips:"Golden oats — see-through six-foot flower stems over an evergreen base. Wants sun and sharp drainage.",
+    cal:[[3,"Tidy","Comb through with gloved hands to pull out dead foliage — do not cut this evergreen down.","A"],
+         [6,"Enjoy","Golden oat flowerheads catching every low sun.","A"],
+         [8,"Tidy","Cut spent flower stems out at the base once they turn scruffy.","L"]]},
+  fernE:{tips:"Evergreen fern — glossy fronds all year. Cut the old ones away only as the new croziers are about to unfurl.",
+    cal:[[3,"Tidy","Cut away last year's tattiest fronds just before the new croziers unroll.","L"],
+         [6,"Water","Water in dry spells; ferns want steady moisture.","A"],
+         [10,"Mulch","Mulch with leaf mould — the food ferns evolved on.","A"]]},
+  fernD:{tips:"Deciduous fern — dies back in autumn and unfurls fresh each spring. Needs damp soil and shade; crisps up if it dries out.",
+    cal:[[2,"Tidy","Clear the collapsed old fronds before the new season starts.","L"],
+         [6,"Water","Keep the soil consistently moist through summer.","A"],
+         [10,"Mulch","Mulch with leaf mould as the fronds die back.","A"]]},
+  gaura:{tips:"Whirling butterflies from June to the frosts. Hates winter wet more than cold — cut back in spring, never autumn, and don't feed it.",
+    cal:[[4,"Cut back","Cut last year's growth back now that frosts are easing — never in autumn.","L"],
+         [7,"Trim","Trim lightly after the first flush to keep flowers coming into October.","A"],
+         [11,"Leave","Leave the top growth standing — it protects the crown over winter.","A"]]},
+  heuchera:{tips:"Evergreen foliage in embers, ginger and near-black. Watch for crowns lifting out of the soil, and for vine weevil in autumn.",
+    cal:[[3,"Tidy","Pull away winter-scorched leaves to make room for fresh growth.","A"],
+         [6,"Deadhead","Snip spent flower spikes to keep new ones coming.","A"],
+         [9,"Divide","Replant any woody, lifted crowns deeper, up to the fresh leaves; check roots for vine weevil grubs.","A"],
+         [10,"Mulch","Mulch around, not over, the crowns.","A"]]},
+  hosta:{tips:"Big, thirsty and the slugs' favourite restaurant. Defences must be in place before the shoots break ground.",
+    cal:[[3,"Protect","Start slug defences now, before shoots emerge — nematodes, wool pellets or traps.","E"],
+         [4,"Feed","Feed and mulch as the leaf spikes push through.","E"],
+         [7,"Water","Water generously in dry weather — big-leaved hostas are the thirstiest things in the garden.","A"],
+         [9,"Divide","Split oversized clumps this month or in March.","A"],
+         [11,"Tidy","Clear the collapsed foliage after frost so slugs have nowhere to winter.","A"]]},
+  nepeta:{tips:"Catmint — a haze of blue from May, adored by bees (and flattened by cats). Shear it mid-season and it does it all again.",
+    cal:[[3,"Cut back","Cut last year's stems back to the fresh basal shoots.","A"],
+         [7,"Cut back","Shear the whole plant over after the first flush — it reflowers within weeks.","E"]]},
+  perov:{tips:"Russian sage — silver stems, violet-blue spires, thrives on neglect and drought. Flowers on new wood.",
+    cal:[[4,"Prune","Cut hard to a low framework, 15–20cm, once the buds break.","A"],
+         [8,"Enjoy","Violet spires at their peak, alive with bees.","A"],
+         [12,"Leave","Leave the ghost-white winter stems standing until spring.","A"]]},
+  rosemary:{tips:"Evergreen, edible, and flowering when little else is. Trim little and often — it will not regrow from bare old wood.",
+    cal:[[5,"Trim","Trim lightly after flowering to keep it bushy — never cut into leafless old wood.","L"],
+         [1,"Harvest","Pick sprigs all year round; winter roasts demand it.","A"]]},
+  salviaS:{tips:"Shrubby salvia — flowers from May to November if deadheaded. Prune in spring only; autumn cuts invite winter losses.",
+    cal:[[4,"Prune","Cut back by a third to a half once frosts pass, always above fresh low shoots.","L"],
+         [7,"Deadhead","Deadhead and lightly trim to keep the flowers coming.","A"],
+         [10,"Propagate","Take a few cuttings as insurance against a hard winter.","E"],
+         [11,"Protect","Mulch around the base before winter.","E"]]},
+  amistad:{tips:"Big velvet-purple flowers on near-black stems, June to the frosts. Only borderline hardy — treat winter as the enemy.",
+    cal:[[4,"Prune","Cut back winter-damaged growth once frosts pass.","L"],
+         [7,"Deadhead","Deadhead regularly; it flowers to the first frost if you do.","A"],
+         [10,"Propagate","Take cuttings now — Amistad often loses the fight with a cold, wet winter.","E"],
+         [11,"Protect","Mulch thickly over the crown, or pot up a division and shelter it.","E"]]},
+  salviaH:{tips:"Herbaceous salvia with deep violet spikes on near-black stems. Cut hard after the first flowering and it repeats.",
+    cal:[[3,"Cut back","Cut winter stems down and tidy the crown.","A"],
+         [7,"Cut back","Cut spent spikes back hard after the first flush for a second flowering in September.","E"]]},
+  sage:{tips:"The kitchen sage — evergreen, drought-proof, best replaced every four or five years when it turns woody.",
+    cal:[[5,"Trim","Trim after flowering to keep it compact.","L"],
+         [4,"Harvest","Pick fresh leaves from now until the frosts.","A"]]},
+  sedumC:{tips:"Carpeting stonecrop for the hottest, poorest spot you have. Needs nothing but sun, grit and to be left alone.",
+    cal:[[7,"Trim","Shear lightly after flowering if the mat turns straggly.","L"],
+         [10,"Tidy","Sweep fallen leaves off the mats — trapped leaves rot the foliage beneath.","L"]]},
+  sedumB:{tips:"Border sedum (Hylotelephium) — succulent domes, dusky flowers, and seedheads that stand all winter. Rich soil makes it flop.",
+    cal:[[2,"Cut back","Cut last year's dead stems to the ground.","A"],
+         [5,"Chelsea chop","Cut every stem by half in late May — the clump stays upright and flowers harder.","L"],
+         [9,"Enjoy","Flat flowerheads buzzing with late bees and butterflies.","A"],
+         [12,"Leave","Leave the seedheads standing for frost and finches.","A"]]},
+  thyme:{tips:"Creeping and bush thymes — sun, grit, and a haircut after flowering. Never cut into bare old wood.",
+    cal:[[4,"Harvest","Pick from now on; top-dress with grit if any stems are rotting at the base.","A"],
+         [7,"Trim","Shear over after flowering to keep the mats tight.","L"]]},
+  verbena:{tips:"Six-foot see-through purple (or knee-high for Lollipop). Self-seeds generously — the seedlings are next year's plants for free.",
+    cal:[[4,"Cut back","Cut last year's stems down as new basal growth shows.","A"],
+         [5,"Thin","Thin self-sown seedlings, or pot up spares to plug gaps.","A"],
+         [11,"Leave","Leave stems standing — birds take the seed and the crown keeps its frost coat.","A"]]},
+  allium:{tips:"Drumstick flowers in May–June, then sculptural seedheads. The foliage looks awful as it flowers — plant something in front and forgive it.",
+    cal:[[3,"Feed","Feed with a balanced fertiliser as the leaves push through.","E"],
+         [5,"Enjoy","Peak allium season — globes at full height.","A"],
+         [6,"Leave","Let the foliage die back naturally, however scruffy — it feeds next year's bulb.","A"],
+         [7,"Tidy","Cut the dried seedheads, or leave them — they look good until autumn.","A"],
+         [9,"Plant","Plant new bulbs and lift or split congested clumps.","A"]]},
+  crocus:{tips:"The first proper colour of the year, and a lifeline for early bees. Let the leaves die down in their own time.",
+    cal:[[2,"Enjoy","In flower — the year's first colour, mobbed by early bees on sunny days.","A"],
+         [3,"Leave","Let the foliage die down naturally — don't mow or tidy it off early.","A"],
+         [9,"Plant","Plant new corms 8–10cm deep in gritty, free-draining soil.","A"]]},
+  narcissus:{tips:"Reliable, generous and long-lived. The one rule: leave the foliage six weeks after flowering, and never knot it.",
+    cal:[[3,"Deadhead","Deadhead as flowers fade, but leave every leaf in place.","A"],
+         [4,"Feed","Feed with a high-potash fertiliser as flowering finishes.","E"],
+         [5,"Tidy","Foliage can be cleared six weeks after flowering — never tied or plaited.","L"],
+         [9,"Plant","Plant new bulbs at three times their own depth.","A"]]},
+  tulip:{tips:"Mount Tacoma — a double white peony-flowered tulip for May. Plant late: November cold helps prevent tulip fire.",
+    cal:[[5,"Deadhead","Deadhead as the petals drop; leave the foliage to die back.","A"],
+         [6,"Tidy","Clear yellowed foliage; lift and dry the bulbs, or leave them and hope.","E"],
+         [11,"Plant","Plant new tulips now — the November chill is your defence against tulip fire.","A"]]},
+  choisya:{tips:"Mexican orange blossom — evergreen, aromatic leaves and white scented flowers in late spring, often again in autumn.",
+    cal:[[4,"Tidy","Cut out any frost-scorched shoots as growth restarts.","E"],
+         [6,"Trim","Trim lightly after the spring flowers — it often rewards you with a second flush in autumn.","E"]]},
+  viburnum:{tips:"A dependable front-garden stalwart. Prune, if at all, straight after flowering; keep an eye out for viburnum beetle in late spring.",
+    cal:[[3,"Mulch","Mulch and feed as growth begins.","A"],
+         [5,"Inspect","Check young leaves for viburnum beetle holes — deal with larvae early.","E"],
+         [6,"Prune","Prune after flowering if it needs shaping.","A"]]},
+  hypericum:{tips:"St John's wort — golden bowls of flower all summer on completely unbothered, thuggishly healthy growth. Flowers on new wood.",
+    cal:[[3,"Cut back","Cut back hard — this year's flowers come on this year's growth.","E"],
+         [7,"Enjoy","In full golden flower, every bloom dusted with pollen-heavy stamens.","A"]]}
+};
+
+/* the plant list, straight from the Westead spreadsheet */
+const PLANTS = [
+  {n:"Acer griseum", c:"Paperbark maple", cat:"Trees", w:"Acer griseum", p:"acerG"},
+  {n:"Acer palmatum 'Sango-kaku'", c:"Coral-bark maple", cat:"Trees", w:"Acer palmatum", p:"acerS"},
+  {n:"Betula utilis jacquemontii", c:"West Himalayan birch", cat:"Trees", w:"Betula utilis", p:"birch"},
+  {n:"Parrotia persica", c:"Persian ironwood", cat:"Trees", w:"Parrotia persica", p:"parrotia"},
+  {n:"Cornus sanguinea 'Midwinter Fire'", c:"Midwinter Fire dogwood", cat:"Shrubs", w:"Cornus sanguinea", p:"cornus"},
+  {n:"Cornus alba", c:"Red-barked dogwood", cat:"Shrubs", w:"Cornus alba", p:"cornus"},
+  {n:"Calamagrostis × acutiflora 'Karl Foerster'", c:"Feather reed grass", cat:"Grasses", w:"Calamagrostis × acutiflora", p:"calam"},
+  {n:"Carex oshimensis (evergreen)", c:"Japanese sedge", cat:"Grasses", w:"Carex oshimensis", p:"carex"},
+  {n:"Carex 'Evergold'", c:"Golden variegated sedge", cat:"Grasses", w:"Carex oshimensis", p:"carex"},
+  {n:"Deschampsia cespitosa", c:"Tufted hair grass", cat:"Grasses", w:"Deschampsia cespitosa", p:"desch"},
+  {n:"Hakonechloa macra", c:"Japanese forest grass", cat:"Grasses", w:"Hakonechloa macra", p:"hakone"},
+  {n:"Pennisetum alopecuroides 'Little Bunny'", c:"Dwarf fountain grass", cat:"Grasses", w:"Pennisetum alopecuroides", p:"penn"},
+  {n:"Pennisetum 'Hameln'", c:"Fountain grass", cat:"Grasses", w:"Pennisetum alopecuroides", p:"penn"},
+  {n:"Stipa gigantea", c:"Golden oats", cat:"Grasses", w:"Stipa gigantea", p:"stipa"},
+  {n:"Asplenium scolopendrium", c:"Hart's tongue fern", cat:"Perennials", w:"Asplenium scolopendrium", p:"fernE"},
+  {n:"Athyrium niponicum pictum 'Red Beauty'", c:"Japanese painted fern", cat:"Perennials", w:"Athyrium niponicum", p:"fernD"},
+  {n:"Gaura lindheimeri 'Summer Breeze'", c:"Gaura · whirling butterflies", cat:"Perennials", w:"Oenothera lindheimeri", p:"gaura"},
+  {n:"Heuchera 'Firefly'", c:"Coral bells", cat:"Perennials", w:"Heuchera", p:"heuchera"},
+  {n:"Heuchera 'Ginger Ale'", c:"Coral bells", cat:"Perennials", w:"Heuchera", p:"heuchera"},
+  {n:"Heuchera 'Obsidian'", c:"Coral bells", cat:"Perennials", w:"Heuchera", p:"heuchera"},
+  {n:"Heuchera sanguinea 'White Cloud'", c:"Coral bells", cat:"Perennials", w:"Heuchera sanguinea", p:"heuchera"},
+  {n:"Hosta 'Big Daddy'", c:"Plantain lily (blue-grey)", cat:"Perennials", w:"Hosta", p:"hosta"},
+  {n:"Hosta 'Stained Glass'", c:"Plantain lily (gold/green)", cat:"Perennials", w:"Hosta", p:"hosta"},
+  {n:"Hosta 'Sum and Substance'", c:"Plantain lily (giant gold)", cat:"Perennials", w:"Hosta", p:"hosta"},
+  {n:"Matteuccia orientalis", c:"Oriental ostrich fern", cat:"Perennials", w:"Matteuccia", p:"fernD"},
+  {n:"Matteuccia struthiopteris", c:"Shuttlecock fern", cat:"Perennials", w:"Matteuccia struthiopteris", p:"fernD"},
+  {n:"Nepeta racemosa 'Walker's Low'", c:"Catmint", cat:"Perennials", w:"Nepeta racemosa", p:"nepeta"},
+  {n:"Osmunda regalis", c:"Royal fern", cat:"Perennials", w:"Osmunda regalis", p:"fernD"},
+  {n:"Perovskia 'Blue Spire'", c:"Russian sage", cat:"Perennials", w:"Perovskia atriplicifolia", p:"perov"},
+  {n:"Polystichum polyblepharum", c:"Japanese tassel fern", cat:"Perennials", w:"Polystichum polyblepharum", p:"fernE"},
+  {n:"Rosmarinus officinalis", c:"Rosemary", cat:"Perennials", w:"Rosemary", p:"rosemary"},
+  {n:"Rosmarinus 'Miss Jessopp's Upright'", c:"Upright rosemary", cat:"Perennials", w:"Rosemary", p:"rosemary"},
+  {n:"Salvia 'Amethyst Lips'", c:"Shrubby salvia", cat:"Perennials", w:"Salvia microphylla", p:"salviaS"},
+  {n:"Salvia greggii 'Icing Sugar'", c:"Autumn sage", cat:"Perennials", w:"Salvia greggii", p:"salviaS"},
+  {n:"Salvia nemorosa 'Caradonna'", c:"Balkan clary", cat:"Perennials", w:"Salvia nemorosa", p:"salviaH"},
+  {n:"Salvia officinalis", c:"Common sage", cat:"Perennials", w:"Salvia officinalis", p:"sage"},
+  {n:"Salvia 'Pink Amistad'", c:"Friendship sage", cat:"Perennials", w:"Salvia 'Amistad'", p:"amistad"},
+  {n:"Salvia × jamensis 'Hot Lips'", c:"Hot Lips salvia", cat:"Perennials", w:"Salvia microphylla", p:"salviaS"},
+  {n:"Sedum acre 'Aureum'", c:"Golden stonecrop", cat:"Perennials", w:"Sedum acre", p:"sedumC"},
+  {n:"Sedum album 'Coral Carpet'", c:"White stonecrop", cat:"Perennials", w:"Sedum album", p:"sedumC"},
+  {n:"Sedum 'Bertram Anderson'", c:"Border sedum", cat:"Perennials", w:"Hylotelephium", p:"sedumB"},
+  {n:"Sedum 'Red Sparkle'", c:"Border sedum", cat:"Perennials", w:"Hylotelephium telephium", p:"sedumB"},
+  {n:"Sedum 'Vera Jameson'", c:"Border sedum", cat:"Perennials", w:"Hylotelephium", p:"sedumB"},
+  {n:"Thymus 'Creeping Red'", c:"Creeping thyme", cat:"Perennials", w:"Thymus serpyllum", p:"thyme"},
+  {n:"Thymus 'Jekka'", c:"Jekka's thyme", cat:"Perennials", w:"Thymus vulgaris", p:"thyme"},
+  {n:"Thymus 'Pink Chintz'", c:"Creeping thyme", cat:"Perennials", w:"Thymus serpyllum", p:"thyme"},
+  {n:"Verbena bonariensis", c:"Purple top", cat:"Perennials", w:"Verbena bonariensis", p:"verbena"},
+  {n:"Verbena bonariensis 'Lollipop'", c:"Dwarf purple top", cat:"Perennials", w:"Verbena bonariensis", p:"verbena"},
+  {n:"Allium 'Gladiator'", c:"Giant allium", cat:"Bulbs", w:"Allium giganteum", p:"allium"},
+  {n:"Allium 'Mont Blanc'", c:"White allium", cat:"Bulbs", w:"Allium", p:"allium"},
+  {n:"Allium 'Ping Pong'", c:"White drumstick allium", cat:"Bulbs", w:"Allium", p:"allium"},
+  {n:"Allium 'Purple Sensation'", c:"Dutch allium", cat:"Bulbs", w:"Allium hollandicum", p:"allium"},
+  {n:"Allium stipitatum 'Mount Everest'", c:"Tall white allium", cat:"Bulbs", w:"Allium stipitatum", p:"allium"},
+  {n:"Crocus chrysanthus 'Snow Bunting'", c:"Snow crocus (white)", cat:"Bulbs", w:"Crocus chrysanthus", p:"crocus"},
+  {n:"Crocus chrysanthus 'Ard Schenk'", c:"Snow crocus (white)", cat:"Bulbs", w:"Crocus chrysanthus", p:"crocus"},
+  {n:"Narcissus 'Bridal Crown'", c:"Double scented daffodil", cat:"Bulbs", w:"Narcissus (plant)", p:"narcissus"},
+  {n:"Narcissus 'Sempre Avanti'", c:"Classic daffodil", cat:"Bulbs", w:"Narcissus (plant)", p:"narcissus"},
+  {n:"Narcissus 'Thalia'", c:"Angel's-tears daffodil", cat:"Bulbs", w:"Narcissus triandrus", p:"narcissus"},
+  {n:"Tulipa 'Mount Tacoma'", c:"Double white tulip", cat:"Bulbs", w:"Tulip", p:"tulip"},
+  {n:"Choisya ternata", c:"Mexican orange blossom", cat:"Front Garden", w:"Choisya ternata", p:"choisya"},
+  {n:"Viburnum", c:"Viburnum", cat:"Front Garden", w:"Viburnum", p:"viburnum"},
+  {n:"Hypericum", c:"St John's wort", cat:"Front Garden", w:"Hypericum calycinum", p:"hypericum"}
+];
+
+const CATS = ["Trees","Shrubs","Grasses","Perennials","Bulbs","Front Garden"];
+PLANTS.forEach((pl,i)=>pl.id="plant-"+i);
+
+/* ================= state ================= */
+const TODAY = new Date();
+const NOW_MONTH = TODAY.getMonth();                       /* 0-based */
+const WEEK_OF_MONTH = Math.min(Math.ceil(TODAY.getDate()/7),4);
+const PHASE_NOW = WEEK_OF_MONTH<=2 ? "E" : "L";
+let selMonth = NOW_MONTH;
+let filterCat = "all";
+let filterText = "";
+let weatherData = null;   /* filled by fetchWeather */
+
+/* ================= helpers ================= */
+const $ = s => document.querySelector(s);
+const monthsFor = pl => {
+  const set = new Set();
+  PROFILES[pl.p].cal.forEach(t=>set.add(t[0]-1));
+  return set;
+};
+const tasksFor = (pl,m) => PROFILES[pl.p].cal.filter(t=>t[0]-1===m);
+
+function hexToRgb(h){const v=parseInt(h.slice(1),16);return[(v>>16)&255,(v>>8)&255,v&255];}
+function hash(s){let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;}return h.toString(36);}
+function store(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function readStore(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function mondayOfThisWeek(){
+  const d = new Date(TODAY);
+  const shift = (d.getDay()+6)%7;   /* Mon=0 */
+  d.setDate(d.getDate()-shift);
+  return d;
+}
+function fmtDate(d){return d.getDate()+" "+MONTHS[d.getMonth()].slice(0,3);}
+
+/* per-week checklist key */
+const WEEK_KEY = "westead|"+TODAY.getFullYear()+"-"+(NOW_MONTH+1)+"-w"+WEEK_OF_MONTH+"|";
+
+/* ================= month spine ================= */
+function buildSpine(){
+  const box = $("#months");
+  MONTHS.forEach((name,i)=>{
+    const b = document.createElement("button");
+    b.className = "mbtn";
+    b.setAttribute("role","tab");
+    b.setAttribute("aria-pressed", i===selMonth ? "true":"false");
+    b.setAttribute("aria-label", name + (i===NOW_MONTH?" (this month)":""));
+    b.innerHTML = `<span>${name.slice(0,3)}</span>${i===NOW_MONTH?'<span class="now-dot" aria-hidden="true"></span>':''}`;
+    b.addEventListener("click",()=>selectMonth(i));
+    box.appendChild(b);
+  });
+}
+
+function selectMonth(i){
+  selMonth = i;
+  document.querySelectorAll(".mbtn").forEach((b,j)=>b.setAttribute("aria-pressed", j===i?"true":"false"));
+  const acc = ACCENTS[i];
+  const [r,g,bl] = hexToRgb(acc);
+  document.documentElement.style.setProperty("--acc", acc);
+  document.documentElement.style.setProperty("--acc-soft", `rgba(${r},${g},${bl},.14)`);
+  $("#spineNote").textContent = i===NOW_MONTH
+    ? "Showing this month — week "+WEEK_OF_MONTH
+    : `Planning ahead — today is ${fmtDate(TODAY)}`;
+  renderJobs();
+  updateCards();
+}
+
+/* ================= job collection ================= */
+function collectGroups(month){
+  /* group identical tasks (shared profiles) and attach plants */
+  const groups = new Map();
+  PLANTS.forEach(pl=>{
+    tasksFor(pl,month).forEach(t=>{
+      const [m,verb,text] = t; const phase = t[3]||"A";
+      const key = verb+"|"+text;
+      if(!groups.has(key)) groups.set(key,{verb,text,phase,plants:[]});
+      groups.get(key).plants.push(pl);
+    });
+  });
+  const order = ["Weather","Protect","Prune","Coppice","Cut back","Chelsea chop","Trim","Deadhead","Tidy","Clean","Thin","Divide","Feed","Mulch","Water","Plant","Propagate","Harvest","Inspect","Leave","Enjoy"];
+  return [...groups.values()].sort((a,b)=>{
+    const ia=order.indexOf(a.verb), ib=order.indexOf(b.verb);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+}
+
+function jobRow(it,{checkable=false,rest=false,weather=false}={}){
+  const row = document.createElement("div");
+  row.className = "job"+(rest?" rest":"")+(weather?" weather-job":"");
+  const chips = it.plants.map(pl=>
+    `<button class="chip" data-target="${pl.id}">${pl.n}</button>`).join("");
+  const help = VERB_HELP[it.verb] ? ` title="${VERB_HELP[it.verb].replace(/"/g,'&quot;')}"` : "";
+  const key = WEEK_KEY + hash(it.verb+it.text);
+  const done = checkable && readStore(key)==="1";
+  if(done) row.classList.add("done");
+  row.innerHTML = `
+    <div class="job-check">${checkable?`<input type="checkbox" aria-label="Mark job done" ${done?"checked":""}>`:""}</div>
+    <div class="job-verb"${help}>${it.verb}</div>
+    <div class="job-body">
+      <div class="job-text">${it.text}</div>
+      <div class="job-plants">${chips}</div>
+    </div>`;
+  if(checkable){
+    row.querySelector("input").addEventListener("change",e=>{
+      row.classList.toggle("done", e.target.checked);
+      store(key, e.target.checked ? "1" : "0");
+      updateProgress();
+    });
+  }
+  return row;
+}
+
+function wireChips(scope){
+  scope.querySelectorAll(".chip").forEach(ch=>{
+    ch.addEventListener("click",()=>{
+      const card = document.getElementById(ch.dataset.target);
+      if(!card) return;
+      if(card.offsetParent===null){ resetFilters(); }
+      card.scrollIntoView({behavior:"smooth",block:"center"});
+      card.classList.add("flash");
+      setTimeout(()=>card.classList.remove("flash"),1600);
+    });
+  });
+}
+
+function updateProgress(){
+  const el = $("#weekProgress");
+  if(!el) return;
+  const boxes = [...document.querySelectorAll("#jobArea .job-check input")];
+  if(!boxes.length){ el.textContent=""; return; }
+  const done = boxes.filter(b=>b.checked).length;
+  el.textContent = done+" of "+boxes.length+" done";
+}
+
+/* ================= jobs panel ================= */
+function renderJobs(){
+  $("#monthName").textContent = MONTHS[selMonth];
+  $("#almanacLine").textContent = ALMANAC[selMonth];
+
+  const items = collectGroups(selMonth);
+  const doing = items.filter(it=>it.verb!=="Enjoy"&&it.verb!=="Leave");
+  $("#jobCount").textContent = doing.length
+    ? `${doing.length} job${doing.length===1?"":"s"} this month · ${items.length-doing.length} to simply notice`
+    : "Nothing on the list — a month for noticing, not doing";
+
+  renderWeatherBox();
+
+  const area = $("#jobArea");
+  area.innerHTML = "";
+
+  if(!items.length && !(selMonth===NOW_MONTH && weatherAdvisories().length)){
+    area.innerHTML = `<p class="no-jobs">A quiet month at Westead. Walk the garden with a cup of tea instead.</p>`;
+    return;
+  }
+
+  if(selMonth===NOW_MONTH){
+    /* ---- current month: THIS WEEK view ---- */
+    const mon = mondayOfThisWeek();
+    const thisWeek = items.filter(it=>(it.phase||"A")==="A" || it.phase===PHASE_NOW);
+    const later    = items.filter(it=>it.phase==="L" && PHASE_NOW==="E");
+    const earlier  = items.filter(it=>it.phase==="E" && PHASE_NOW==="L");
+
+    const head = document.createElement("div");
+    head.className="week-title";
+    head.innerHTML = `<h3>This week</h3>
+      <span class="sub">w/c Monday ${fmtDate(mon)} · week ${WEEK_OF_MONTH} of ${MONTHS[selMonth]}</span>
+      <span class="progress" id="weekProgress"></span>`;
+    area.appendChild(head);
+
+    const list = document.createElement("div");
+    list.className="job-list";
+    /* weather advisories first */
+    weatherAdvisories().forEach(ad=>list.appendChild(jobRow(ad,{weather:true})));
+    thisWeek.forEach(it=>list.appendChild(jobRow(it,{checkable:true})));
+    if(!thisWeek.length && !weatherAdvisories().length){
+      list.innerHTML = `<p class="no-jobs">Nothing due this week — walk the garden with a cup of tea instead.</p>`;
+    }
+    area.appendChild(list);
+
+    if(later.length){
+      const t=document.createElement("div");t.className="rest-title";
+      t.textContent="Later this month (weeks 3–4)";
+      area.appendChild(t);
+      const l2=document.createElement("div");l2.className="job-list";
+      later.forEach(it=>l2.appendChild(jobRow(it,{rest:true})));
+      area.appendChild(l2);
+    }
+    if(earlier.length){
+      const t=document.createElement("div");t.className="rest-title";
+      t.textContent="From earlier this month — catch up if missed";
+      area.appendChild(t);
+      const l2=document.createElement("div");l2.className="job-list";
+      earlier.forEach(it=>l2.appendChild(jobRow(it,{rest:true})));
+      area.appendChild(l2);
+    }
+    updateProgress();
+  }else{
+    /* ---- planning view for another month: early / late / anytime ---- */
+    const buckets = [
+      ["Early "+MONTHS[selMonth]+" (weeks 1–2)", items.filter(it=>it.phase==="E")],
+      ["Late "+MONTHS[selMonth]+" (weeks 3–4)",  items.filter(it=>it.phase==="L")],
+      ["Any time in "+MONTHS[selMonth],           items.filter(it=>(it.phase||"A")==="A")]
+    ];
+    buckets.forEach(([label,arr])=>{
+      if(!arr.length) return;
+      const t=document.createElement("div");t.className="rest-title";t.textContent=label;
+      area.appendChild(t);
+      const l=document.createElement("div");l.className="job-list";
+      arr.forEach(it=>l.appendChild(jobRow(it)));
+      area.appendChild(l);
+    });
+  }
+  wireChips(area);
+}
+
+/* ================= weather ================= */
+/* Garden location — Brentwood, Essex by default.
+   Override in the URL: yourpage.html?lat=51.62&lon=0.30 */
+const params = new URLSearchParams(location.search);
+const LAT = parseFloat(params.get("lat")) || 51.62;
+const LON = parseFloat(params.get("lon")) || 0.30;
+
+function wmoEmoji(c){
+  if(c===0) return "☀️";
+  if(c<=2) return "🌤️";
+  if(c===3) return "☁️";
+  if(c<=48) return "🌫️";
+  if(c<=57) return "🌦️";
+  if(c<=67) return "🌧️";
+  if(c<=77) return "❄️";
+  if(c<=82) return "🌦️";
+  if(c<=86) return "❄️";
+  return "⛈️";
+}
+
+function fetchWeather(){
+  const url = "https://api.open-meteo.com/v1/forecast?latitude="+LAT+"&longitude="+LON
+    + "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_gusts_10m_max"
+    + "&past_days=7&forecast_days=7&timezone=auto";
+  fetch(url).then(r=>r.ok?r.json():null).then(d=>{
+    if(!d || !d.daily) return;
+    weatherData = d.daily;
+    if(selMonth===NOW_MONTH) renderJobs();
+  }).catch(()=>{ /* no weather — page works fine without it */ });
+}
+
+function weatherStats(){
+  if(!weatherData) return null;
+  const D = weatherData;
+  const sum = a=>a.reduce((x,y)=>x+(y||0),0);
+  const past = i=>i<7, next = i=>i>=7;
+  const idx = [...D.time.keys()];
+  return {
+    rainPast: sum(idx.filter(past).map(i=>D.precipitation_sum[i])),
+    rainNext: sum(idx.filter(next).map(i=>D.precipitation_sum[i])),
+    minNext: Math.min(...idx.filter(next).map(i=>D.temperature_2m_min[i])),
+    maxNext: Math.max(...idx.filter(next).map(i=>D.temperature_2m_max[i])),
+    gustNext: Math.max(...idx.filter(next).map(i=>D.wind_gusts_10m_max[i]))
+  };
+}
+
+function plantsBy(preds){ return PLANTS.filter(preds); }
+
+function weatherAdvisories(){
+  const s = weatherStats();
+  if(!s || selMonth!==NOW_MONTH) return [];
+  const ads = [];
+  const m = NOW_MONTH+1;
+  const tender  = plantsBy(pl=>["amistad","salviaS","penn","gaura"].includes(pl.p));
+  const thirsty = plantsBy(pl=>["hosta","fernD","fernE","hakone"].includes(pl.p) || pl.cat==="Trees");
+  const slugMagnets = plantsBy(pl=>pl.p==="hosta");
+  const tall    = plantsBy(pl=>pl.n==="Verbena bonariensis"||pl.p==="stipa");
+
+  if(s.minNext<=2 && m>=3 && m<=5)
+    ads.push({verb:"Weather",text:`Frost risk this week (low of ${s.minNext.toFixed(0)}°C forecast). Hold off pruning the shrubby salvias and gaura, and fleece or cover Salvia 'Pink Amistad' on cold nights.`,plants:tender});
+  if(s.minNext<=2 && m>=10 && m<=11)
+    ads.push({verb:"Weather",text:`First frosts forecast (low of ${s.minNext.toFixed(0)}°C). Get mulch over the Amistad and pennisetum crowns this week rather than later.`,plants:tender});
+  if(s.rainPast<4 && s.rainNext<4 && m>=4 && m<=9)
+    ads.push({verb:"Weather",text:`Dry spell — only ${s.rainPast.toFixed(0)}mm of rain in the past week and little coming. Give the hostas, ferns, hakonechloa and any recently planted trees a deep evening soak.`,plants:thirsty});
+  if(s.maxNext>=27)
+    ads.push({verb:"Weather",text:`Heat this week (up to ${s.maxNext.toFixed(0)}°C). Water in the evening, pots daily; expect the hostas to flag in the afternoon — that's normal if the soil is moist.`,plants:thirsty});
+  if(s.rainNext>=20)
+    ads.push({verb:"Weather",text:`A wet week ahead (~${s.rainNext.toFixed(0)}mm forecast). Skip watering, keep off sodden borders, and do a slug patrol around the hostas after each downpour.`,plants:slugMagnets});
+  if(s.gustNext>=60)
+    ads.push({verb:"Weather",text:`Gales forecast (gusts to ${s.gustNext.toFixed(0)} km/h). Check the ties and stakes on young trees; the tall verbena and stipa flower stems may need discreet support.`,plants:tall});
+  if(!ads.length)
+    ads.push({verb:"Weather",text:`No weather worries this week — ${s.minNext.toFixed(0)} to ${s.maxNext.toFixed(0)}°C with about ${s.rainNext.toFixed(0)}mm of rain expected. Garden as planned.`,plants:[]});
+  return ads;
+}
+
+function renderWeatherBox(){
+  const box = $("#weatherBox");
+  if(selMonth!==NOW_MONTH){
+    box.innerHTML = weatherData
+      ? `<p class="weather-off">Live weather shows on the current month — this is the planning view.</p>` : "";
+    return;
+  }
+  if(!weatherData){ box.innerHTML=""; return; }
+  const D = weatherData;
+  let chips = "";
+  for(let i=7;i<D.time.length;i++){
+    const d = new Date(D.time[i]+"T12:00");
+    const rain = D.precipitation_sum[i];
+    chips += `<div class="fday${i===7?" today":""}">
+      <div class="d">${i===7?"Today":DAYS[d.getDay()]}</div>
+      <div class="e">${wmoEmoji(D.weather_code[i])}</div>
+      <div class="t">${Math.round(D.temperature_2m_max[i])}° <small>${Math.round(D.temperature_2m_min[i])}°</small></div>
+      <div class="r">${rain>=0.5?rain.toFixed(0)+"mm":""}</div>
+    </div>`;
+  }
+  const s = weatherStats();
+  box.innerHTML = `
+    <div class="weather">
+      <div class="weather-head">
+        <b>The week's weather over the garden</b>
+        <span>· ${s.rainPast.toFixed(0)}mm fell in the last 7 days</span>
+      </div>
+      <div class="forecast">${chips}</div>
+    </div>`;
+}
+
+/* ================= directory ================= */
+function buildDirectory(){
+  const dir = $("#directory");
+  CATS.forEach(cat=>{
+    const plants = PLANTS.filter(p=>p.cat===cat);
+    const sec = document.createElement("section");
+    sec.className = "section";
+    sec.dataset.cat = cat;
+    sec.innerHTML = `
+      <div class="section-title">
+        <h3>${cat}</h3><div class="rule"></div><span class="n">${plants.length}</span>
+      </div>
+      <div class="grid"></div>`;
+    const grid = sec.querySelector(".grid");
+    plants.forEach(pl=>grid.appendChild(buildCard(pl)));
+    dir.appendChild(sec);
+  });
+  $("#plantCount").textContent = PLANTS.length + " plants";
+}
+
+function buildCard(pl){
+  const prof = PROFILES[pl.p];
+  const active = monthsFor(pl);
+  const card = document.createElement("article");
+  card.className = "plant";
+  card.id = pl.id;
+  card.dataset.cat = pl.cat;
+  card.dataset.search = (pl.n+" "+pl.c+" "+pl.cat).toLowerCase();
+
+  const bandCells = MABBR.map((a,i)=>{
+    const t = tasksFor(pl,i).map(tt=>tt[1]+": "+tt[2]).join("  •  ");
+    return `<div class="cell${active.has(i)?" on":""}${i===selMonth?" sel":""}" title="${MONTHS[i]}${t?" — "+t.replace(/"/g,'&quot;'):" — nothing needed"}"></div>`;
+  }).join("");
+
+  card.innerHTML = `
+    <div class="ph" data-wiki="${pl.w.replace(/"/g,'&quot;')}">
+      <div class="fallback">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+          <path d="M12 21c0-6 1-11 8-15-1 8-3 12-8 15zM12 21c0-4-1-8-7-11 1 6 3 9 7 11z" stroke-linejoin="round"/>
+          <path d="M12 21v-4"/>
+        </svg>
+        <span>${pl.cat}</span>
+      </div>
+    </div>
+    <div class="pbody">
+      <div>
+        <div class="pname">${pl.c}</div>
+        <div class="platin">${pl.n}</div>
+      </div>
+      <p class="ptips">${prof.tips}</p>
+      <div class="pnow"></div>
+      <div>
+        <div class="band">${bandCells}</div>
+        <div class="band-labels">${MABBR.map(a=>`<span>${a}</span>`).join("")}</div>
+      </div>
+    </div>`;
+  return card;
+}
+
+function updateCards(){
+  document.querySelectorAll(".plant").forEach(card=>{
+    const pl = PLANTS.find(p=>p.id===card.id);
+    const tasks = tasksFor(pl,selMonth);
+    const pnow = card.querySelector(".pnow");
+    if(tasks.length){
+      pnow.classList.remove("quiet");
+      pnow.innerHTML = `<b>${MONTHS[selMonth].slice(0,3)}:</b> ` +
+        tasks.map(t=>t[2]).join(" ");
+    }else{
+      pnow.classList.add("quiet");
+      pnow.textContent = `Nothing needed in ${MONTHS[selMonth]}.`;
+    }
+    card.querySelectorAll(".cell").forEach((c,i)=>c.classList.toggle("sel",i===selMonth));
+  });
+}
+
+/* ================= filtering ================= */
+function applyFilters(){
+  document.querySelectorAll(".plant").forEach(card=>{
+    const okCat = filterCat==="all" || card.dataset.cat===filterCat;
+    const okTxt = !filterText || card.dataset.search.includes(filterText);
+    card.style.display = (okCat&&okTxt) ? "" : "none";
+  });
+  document.querySelectorAll(".section").forEach(sec=>{
+    const any = [...sec.querySelectorAll(".plant")].some(c=>c.style.display!=="none");
+    sec.style.display = any ? "" : "none";
+  });
+}
+function resetFilters(){
+  filterCat="all"; filterText="";
+  $("#search").value="";
+  document.querySelectorAll(".catchip").forEach(b=>b.setAttribute("aria-pressed",b.dataset.cat==="all"?"true":"false"));
+  applyFilters();
+}
+$("#search").addEventListener("input",e=>{
+  filterText = e.target.value.trim().toLowerCase();
+  applyFilters();
+});
+document.querySelectorAll(".catchip").forEach(b=>{
+  b.addEventListener("click",()=>{
+    filterCat = b.dataset.cat;
+    document.querySelectorAll(".catchip").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));
+    applyFilters();
+  });
+});
+
+/* ================= plant photos =================
+   Three sources, tried in order per plant:
+   1. Wikipedia REST summary (fetch)
+   2. Wikipedia action API with origin=* — the endpoint built for
+      cross-origin browser use, works where REST is blocked (fetch)
+   3. Wikimedia Commons Special:FilePath via a plain <img> tag —
+      no fetch, no CORS, works even when scripts can't call out
+   Whatever fails, the leaf placeholder stays. */
+
+const imgCache = new Map();
+let photoTried = 0, photoLoaded = 0;
+
+function candidatesFor(title){
+  if(imgCache.has(title)) return imgCache.get(title);
+  const p = (async ()=>{
+    const urls = [];
+    try{
+      const r = await fetch("https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(title), {mode:"cors"});
+      if(r.ok){
+        const d = await r.json();
+        if(d && d.thumbnail && d.thumbnail.source){
+          const src = d.thumbnail.source;
+          const big = src.replace(/\/(\d+)px-/, "/640px-");
+          if(big!==src) urls.push(big);
+          urls.push(src);
+        }
+      }
+    }catch(e){}
+    if(!urls.length){
+      try{
+        const u = "https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*"
+                + "&prop=pageimages&piprop=thumbnail&pithumbsize=640&redirects=1"
+                + "&titles=" + encodeURIComponent(title);
+        const r = await fetch(u, {mode:"cors"});
+        if(r.ok){
+          const d = await r.json();
+          const pages = d && d.query && d.query.pages;
+          if(pages){
+            const pg = Object.values(pages)[0];
+            if(pg && pg.thumbnail && pg.thumbnail.source) urls.push(pg.thumbnail.source);
+          }
+        }
+      }catch(e){}
+    }
+    const guess = title.replace(/ \(plant\)$/,"");
+    urls.push("https://commons.wikimedia.org/wiki/Special:FilePath/"+encodeURIComponent(guess+".jpg")+"?width=640");
+    urls.push("https://commons.wikimedia.org/wiki/Special:FilePath/"+encodeURIComponent(guess+" 01.jpg")+"?width=640");
+    return urls;
+  })();
+  imgCache.set(title, p);
+  return p;
+}
+
+function tryLoad(ph, urls, i){
+  if(i >= urls.length){ settlePhoto(false); return; }
+  const img = new Image();
+  img.alt = ph.dataset.wiki;
+  img.referrerPolicy = "no-referrer";
+  img.onload = ()=>{
+    if(img.naturalWidth < 80){ tryLoad(ph, urls, i+1); return; }
+    ph.appendChild(img);
+    requestAnimationFrame(()=>img.classList.add("ready"));
+    settlePhoto(true);
+  };
+  img.onerror = ()=>tryLoad(ph, urls, i+1);
+  img.src = urls[i];
+}
+
+function loadPhoto(ph){
+  candidatesFor(ph.dataset.wiki).then(urls=>tryLoad(ph, urls, 0));
+}
+
+function settlePhoto(ok){
+  photoTried++;
+  if(ok) photoLoaded++;
+  if(photoTried >= 8 && photoLoaded === 0){
+    document.getElementById("photoWarn").classList.add("show");
+  }
+  if(photoLoaded > 0){
+    document.getElementById("photoWarn").classList.remove("show");
+  }
+}
+
+const io = ("IntersectionObserver" in window) ? new IntersectionObserver(entries=>{
+  entries.forEach(en=>{
+    if(!en.isIntersecting) return;
+    io.unobserve(en.target);
+    loadPhoto(en.target);
+  });
+},{rootMargin:"600px"}) : null;
+
+/* ================= boot ================= */
+buildSpine();
+buildDirectory();
+selectMonth(NOW_MONTH);
+applyFilters();
+fetchWeather();
+document.querySelectorAll(".ph").forEach(ph=>{
+  if(io) io.observe(ph); else loadPhoto(ph);
+});
+</script>
+</body>
+</html>
