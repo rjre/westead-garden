@@ -50,6 +50,7 @@
     line-height:1.02;letter-spacing:-.01em;margin-top:6px;
   }
   h1 em{font-style:italic;font-weight:340;color:var(--muted)}
+  .updated{font-size:12.5px;color:var(--faint);margin-top:10px}
   .intro{max-width:58ch;color:var(--muted);margin-top:12px}
 
   /* ---------- month spine ---------- */
@@ -175,6 +176,29 @@
   .chip:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
   .no-jobs{color:var(--muted);font-style:italic;padding:14px 0 4px}
   .glossary-hint{margin-top:14px;font-size:12px;color:var(--faint)}
+  .tick-note{margin-top:16px;font-size:12.5px;color:var(--faint)}
+  .sync{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:8px}
+  .sync-btn{
+    appearance:none;border:1px solid var(--line);background:var(--paper);
+    border-radius:999px;font-family:'Karla',sans-serif;font-size:12.5px;font-weight:600;
+    color:var(--muted);padding:6px 14px;cursor:pointer;transition:all .2s;
+  }
+  .sync-btn:hover{border-color:var(--acc);color:var(--ink);background:var(--acc-soft)}
+  .sync-btn:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+  .sync-status{font-size:12.5px;color:var(--acc);font-weight:600}
+
+  /* ---------- back to top ---------- */
+  .back-top{
+    position:fixed;right:20px;bottom:20px;z-index:60;
+    width:46px;height:46px;border-radius:50%;border:1px solid var(--line);
+    background:var(--acc);color:var(--acc-ink);font-size:19px;line-height:1;
+    cursor:pointer;box-shadow:0 6px 18px rgba(36,44,34,.18);
+    opacity:0;visibility:hidden;transform:translateY(10px);
+    transition:opacity .25s,transform .25s,visibility 0s .25s,background .5s;
+  }
+  .back-top.show{opacity:1;visibility:visible;transform:translateY(0);transition:opacity .25s,transform .25s,background .5s}
+  .back-top:hover{filter:brightness(1.06)}
+  .back-top:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 
   /* ---------- directory ---------- */
   .dir-head{
@@ -269,6 +293,7 @@
   <header>
     <div class="eyebrow" id="eyebrow">Garden Almanac</div>
     <h1>Westead <em>— the year in the garden</em></h1>
+    <p class="updated" id="lastUpdated"></p>
     <p class="intro">Open this once a week. It knows the date, checks the weather,
     and tells you what the garden needs — tick jobs off as you go. Pick another
     month to see what's coming.</p>
@@ -287,6 +312,14 @@
     <div id="jobArea"></div>
     <p class="glossary-hint">New to the jargon? Hover (or long-press) any job label —
     coppice, Chelsea chop and the rest are explained.</p>
+    <p class="tick-note" id="tickNote"></p>
+    <div class="sync">
+      <button class="sync-btn" id="syncCopy" type="button">Copy progress code</button>
+      <button class="sync-btn" id="syncPaste" type="button">Paste progress code…</button>
+      <span class="sync-status" id="syncStatus" aria-live="polite"></span>
+    </div>
+    <p class="glossary-hint">Ticked jobs are only saved in this browser. To bring your
+    progress into another browser or device, copy the code here and paste it in over there.</p>
   </section>
 
   <div class="dir-head">
@@ -315,6 +348,8 @@
     <span>Photos from Wikipedia · forecast by Open-Meteo · loaded live when online</span>
   </footer>
 </div>
+
+<button class="back-top" id="backTop" type="button" aria-label="Back to top">↑</button>
 
 <script>
 /* ================= data ================= */
@@ -602,6 +637,32 @@ function hexToRgb(h){const v=parseInt(h.slice(1),16);return[(v>>16)&255,(v>>8)&2
 function hash(s){let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;}return h.toString(36);}
 function store(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 function readStore(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+
+/* ---- progress sync: no server, so progress is copied between browsers
+   as a short text code rather than kept in sync automatically ---- */
+function allProgressData(){
+  const data = {};
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(k && k.indexOf("westead|")===0) data[k]=localStorage.getItem(k);
+    }
+  }catch(e){}
+  return data;
+}
+function encodeProgress(){
+  return btoa(unescape(encodeURIComponent(JSON.stringify(allProgressData()))));
+}
+function mergeProgress(code){
+  let data;
+  try{ data = JSON.parse(decodeURIComponent(escape(atob(code.trim())))); }
+  catch(e){ return false; }
+  if(!data || typeof data!=="object") return false;
+  Object.keys(data).forEach(k=>{
+    if(k.indexOf("westead|")===0 && (data[k]==="1"||readStore(k)===null)) store(k,data[k]);
+  });
+  return true;
+}
 function mondayOfThisWeek(){
   const d = new Date(TODAY);
   const shift = (d.getDay()+6)%7;   /* Mon=0 */
@@ -610,8 +671,11 @@ function mondayOfThisWeek(){
 }
 function fmtDate(d){return d.getDate()+" "+MONTHS[d.getMonth()].slice(0,3);}
 
-/* per-week checklist key */
-const WEEK_KEY = "westead|"+TODAY.getFullYear()+"-"+(NOW_MONTH+1)+"-w"+WEEK_OF_MONTH+"|";
+/* the gardening season runs 1 July – 30 June; ticked jobs stay ticked all season,
+   through every week of the month, and only clear when the next season starts */
+const SEASON_YEAR = NOW_MONTH>=6 ? TODAY.getFullYear() : TODAY.getFullYear()-1;
+const TASK_KEY = "westead|s"+SEASON_YEAR+"|m"+(NOW_MONTH+1)+"|";
+const LAST_UPDATED = "3 August 2026, 20:33 BST";
 
 /* ================= month spine ================= */
 function buildSpine(){
@@ -672,7 +736,7 @@ function jobRow(it,{checkable=false,rest=false,weather=false}={}){
   const chips = [...seen.entries()].map(([label,id])=>
     `<button class="chip" data-target="${id}">${label}</button>`).join("");
   const help = VERB_HELP[it.verb] ? ` title="${VERB_HELP[it.verb].replace(/"/g,'&quot;')}"` : "";
-  const key = WEEK_KEY + hash(it.verb+it.text);
+  const key = TASK_KEY + hash(it.verb+it.text);
   const done = checkable && readStore(key)==="1";
   if(done) row.classList.add("done");
   row.innerHTML = `
@@ -1098,7 +1162,45 @@ const io = ("IntersectionObserver" in window) ? new IntersectionObserver(entries
   });
 },{rootMargin:"600px"}) : null;
 
+/* ================= sync UI ================= */
+function flashSyncStatus(msg){
+  const el = $("#syncStatus");
+  el.textContent = msg;
+  clearTimeout(flashSyncStatus._t);
+  flashSyncStatus._t = setTimeout(()=>{ el.textContent=""; },5000);
+}
+$("#syncCopy").addEventListener("click", async ()=>{
+  const code = encodeProgress();
+  try{
+    await navigator.clipboard.writeText(code);
+    flashSyncStatus("Copied — paste it into the almanac on your other browser.");
+  }catch(e){
+    window.prompt("Copy this code, then paste it into the almanac on your other browser:", code);
+  }
+});
+$("#syncPaste").addEventListener("click", ()=>{
+  const code = window.prompt("Paste the progress code from your other browser:");
+  if(!code) return;
+  if(mergeProgress(code)){
+    renderJobs();
+    flashSyncStatus("Brought in — your ticks from the other browser are now here too.");
+  }else{
+    flashSyncStatus("That code didn't look right — check you copied all of it.");
+  }
+});
+
+/* ================= back to top ================= */
+const backTop = $("#backTop");
+window.addEventListener("scroll", ()=>{
+  backTop.classList.toggle("show", window.scrollY > 480);
+},{passive:true});
+backTop.addEventListener("click", ()=>{
+  window.scrollTo({top:0,behavior:"smooth"});
+});
+
 /* ================= boot ================= */
+$("#lastUpdated").textContent = "Code last updated " + LAST_UPDATED;
+$("#tickNote").textContent = "Ticked jobs stay ticked all season — from 1 July "+SEASON_YEAR+" — until you untick them.";
 buildSpine();
 buildDirectory();
 selectMonth(NOW_MONTH);
