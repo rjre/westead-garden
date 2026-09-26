@@ -618,9 +618,9 @@ function hexToRgb(h){const v=parseInt(h.slice(1),16);return[(v>>16)&255,(v>>8)&2
 function hash(s){let h=0;for(let i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))>>>0;}return h.toString(36);}
 function store(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 function readStore(k){try{return localStorage.getItem(k);}catch(e){return null;}}
-function mondayOfThisWeek(){
+function fridayOfThisWeek(){
   const d = new Date(TODAY);
-  const shift = (d.getDay()+6)%7;   /* Mon=0 */
+  const shift = (d.getDay()+2)%7;   /* Fri=0, so week runs Fri-Thu */
   d.setDate(d.getDate()-shift);
   return d;
 }
@@ -754,7 +754,7 @@ function renderJobs(){
 
   if(selMonth===NOW_MONTH){
     /* ---- current month: THIS WEEK view ---- */
-    const mon = mondayOfThisWeek();
+    const fri = fridayOfThisWeek();
     const thisWeek = items.filter(it=>(it.phase||"A")==="A" || it.phase===PHASE_NOW);
     const later    = items.filter(it=>it.phase==="L" && PHASE_NOW==="E");
     const earlier  = items.filter(it=>it.phase==="E" && PHASE_NOW==="L");
@@ -762,7 +762,7 @@ function renderJobs(){
     const head = document.createElement("div");
     head.className="week-title";
     head.innerHTML = `<h3>This week</h3>
-      <span class="sub">w/c Monday ${fmtDate(mon)} · week ${WEEK_OF_MONTH} of ${MONTHS[selMonth]}</span>
+      <span class="sub">w/c Friday ${fmtDate(fri)} · week ${WEEK_OF_MONTH} of ${MONTHS[selMonth]}</span>
       <span class="progress" id="weekProgress"></span>`;
     area.appendChild(head);
 
